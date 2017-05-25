@@ -59,7 +59,7 @@ based Recommendation System to enhance the quality of the recommendations.
     
 - Other ideas
 
-#Initial calculation results
+# Initial calculation results
 
 After intial process of loading and transforming our dataset, these are the information fetched:
 -Number of Reviewers:           21137702
