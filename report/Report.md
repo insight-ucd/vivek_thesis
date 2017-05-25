@@ -67,6 +67,6 @@ After intial process of loading and transforming our dataset, these are the info
 - Number of Reviews:             83091702
 - Mean reviews per Reviewer:     3.930971398877702
 - Mean reviews per Item:         8.429470545949464
-- Data Density:                  3.9878840878490305e-05 %
+- Data Density:                  3.9878840878490305e-07 %
 
 # References
