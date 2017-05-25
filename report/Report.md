@@ -59,5 +59,14 @@ based Recommendation System to enhance the quality of the recommendations.
     
 - Other ideas
 
+#Initial calculation results
+
+After intial process of loading and transforming our dataset, these are the information fetched:
+-Number of Reviewers:           21137702
+-Number of Items:               9857286
+-Number of Reviews:             83091702
+-Mean reviews per Reviewer:     3.930971398877702
+-Mean reviews per Item:         8.429470545949464
+-Data Density:                  3.9878840878490305e-05 %
 
 # References
