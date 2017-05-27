@@ -62,6 +62,8 @@ based Recommendation System to enhance the quality of the recommendations.
 # Initial calculation results
 
 After intial process of loading and transforming our dataset, these are the information fetched:
+
+- Duplicated Records:            255200
 - Number of Reviewers:           21137702
     - Mean reviews per Reviewer:     3.930971398877702
 - Number of Items:               9857286
