@@ -63,12 +63,24 @@ based Recommendation System to enhance the quality of the recommendations.
 
 After intial process of loading and transforming our dataset, these are the information fetched:
 
-- Duplicated Records:            255200
 - Number of Reviewers:           21137702
     - Mean reviews per Reviewer:     3.930971398877702
 - Number of Items:               9857286
     - Mean reviews per Item:         8.429470545949464
 - Number of Reviews:             83091702
+- Mean Rating (Overall)          4.160582605468835
 - Data Density:                  3.9878840878490305e-07 %
+- Duplicated Records:            255200
+
+After removing duplicate records:
+
+- Number of Reviewers:           21137702
+    - Mean reviews per Reviewer:     3.9188981848641826
+- Number of Items:               9857286
+    - Mean reviews per Item:         8.403581066837262
+- Number of Reviews:             82836502
+- Mean Rating (Overall)          4.160287079722415
+- Data Density:                  3.975636077581783e-07 % %
+
 
 # References
