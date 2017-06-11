@@ -1,3 +1,8 @@
+#4
+Created an initial word processing function and further went on through with tfidf vectorizer.
+Most frequent occuring words were extracted later.
+(This all has been conducted on a small sample of the original dataset.)
+
 #3
 Work started on text processing
 
