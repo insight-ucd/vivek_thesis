@@ -1,1 +1,963 @@
-# vivek_thesis
+
+
+Neural Embeddings for Automatic Sentiment Analysis
+
+
+
+
+
+Vivek Mahato
+
+
+
+
+
+A thesis submitted in part fulfillment of the
+degree of MSc. Computer Science by Negotiated Learning
+with the supervision of Dr. Lawlor Aonghus
+
+
+
+
+ 
+
+
+
+
+
+School of Computer Science
+University College Dublin
+
+August 2017
+
+
+
+
+
+
+
+
+ACKNOWLEDGEMENTS
+
+
+
+I owe my deepest gratitude to my supervisor Professor Aonghus Lawlor, Ph.D. Without his continuous optimism concerning this work, enthusiasm, support, and very constructive criticism this dissertation would hardly have been completed. His timely and valuable guidance, keen interest, and encouragement at various stages of my thesis have contributed immensely to the evolution of my ideas on the project.
+
+I also express my warmest gratitude to my fellow colleagues at Insight Centre in UCD (University College Dublin), for being so welcoming and helping me to carry out this work in their department.  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+DECLARATION
+
+
+
+
+
+
+
+
+
+
+
+
+“I hereby certify that this dissertation is entirely my own work. Neither the work nor parts thereof have been published elsewhere in either paper or electronic form unless indicated otherwise through referencing”.
+
+
+
+
+
+
+
+
+
+Signed: ___________________________________
+
+
+Date: ___________________________________
+
+
+
+Vivek Mahato.
+
+
+
+
+
+
+
+
+
+
+
+
+
+ABSTRACT
+
+
+This dissertation aims to extend the application of Word2Vec model, which is a machine-learning based approach for natural language text processing that works on vector representation of words in a high dimensional vector space model. Word2Vec family models does not consider the contextual meaning of a word thus they face a problem called “polysemy”, where they fail to capture true meaning of a word when there are occurrences of polyseme words. A polyseme is a word that have two or more distinct meanings. As by some estimate English language have more than 40% words with multiple meanings, thus having just Word2Vec without any further adjustments do not possess high precision when similarity of words is in question.
+
+In this project, we try to extend the functionality of the Word2Vec model, by training the model with part-of-speech tags attached to the words. The model then considers the words appearing with different meanings as different vectors in the model, rather than the same word. Because of this the new model does not predict the similarity between two words based on the surrounding words, rather the sense of the vector is predicted based on the surrounding senses. Hence, we call the new model as “Sense2Vec” (Trask et al.).
+
+We conduct various evaluations between both Word2vec and Sense2Vec models, through queries to find most similar words and by clustering the most similar words using the t-SNE clustering method which collapses the high dimensional space into a 2-dimensional representation.
+
+The plots generated when t-SNE cluster vectors are scattered on a chart are then evaluated, to which we found out that although Word2Vec was able to find the most similar words, but there were occurrences of many such words which were given high similarity score that were an error by the model or not in context with the surrounding words. On the other hand, Sense2Vec model surpassed the prediction power of a simple Word2Vec model, as the most similar words in a cluster were sharing the same contextual sense. With that we were tried to even identify relationships between a word to other words. As we investigated the relationship, we introduced sentiment polarity scores to the word vectors that were represented on the chart, and with the help of that we could visualize zones of positive and negative sentiment around a word vector.
+
+This dissertation paves a way to future exploration in the field of sentiment analysis through word vector representation machine-learning based approach.
+
+
+
+
+
+
+CONTENTS
+
+
+
+1	Introduction
+
+2	Literature Review
+
+3	Methodology
+
+4	Results/Evaluation
+
+5	Conclusion
+
+6	Appendix
+
+7	References
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Introduction
+
+
+Automatic sentiment analysis under information extraction is an important field and continues to receive interest from the academic community. The aim is to extract sentiments and opinion from user reviews and use the extracted features and sentiment to classify the reviews which can be used for generating personalized recommendations.
+
+For generating recommendations, Collaborative Filtering (CF) is the standard technique. It provides personalized recommendations to users based on a profile of user preferences, from which users having similar tastes are identified. It then recommends to a target user, the items liked by other similar users. Some music review banks, such as Amazon Customer Reviews on its music sales, allow users to provide comments in free text format. Such User generated reviews also come with a “user rating”, and connecting this rating with the sentiment in the text is a problem we will explore. Being free text generated by users, the reviews do not possess the same structure or format, and generally they are unstructured and of mixed sentiments, affecting the overall sentiment of the review. Previous approaches to sentiment analysis based on transfer learning have a critical problem in that they only work well on a single source domain and a single target domain. For example, the adjective ''unpredictable'' may have a negative orientation in an automotive review, in a phrase such as ''unpredictable steering'', but it could have a positive orientation in a movie review, in a phrase such as “unpredictable plot''. A word like “sick” has a negative sentiment in domains like medical or general conversation, but in the domain of music reviews, the word has a positive impact. Such incidents lower the quality of our recommendation engine if they are classified wrongly.
+
+This research will be focused on exploring various techniques that shed a light on overcoming the stated problems in automatic sentiment extraction and analysis on Movies and TV reviews. In our work, we will first pre-process the user reviews using NLTK techniques. After which, the tokenized words would be plotted on a Word2Vec vector space model of around 500-600 dimensions. These word vectors would then be plotted on a Sent2Vec vector space model, where the polarity of these words would be classified using natural language processing tools in Python, like TextBlob. We will build a ternary task of classification of sentiment into positive, negative and neutral polarities. 
+The job of classifying the sentiment polarity of a written text in natural language into positive, negative or neutral feeling is so complex that even if we conduct the classification manually, different people have different opinion regarding the sentiment polarity of a word. Such differences can be based on personal experience, cultural background, language they speak, etc. With influx of social networking and micro-blogging sites like Facebook and Twitter, analyzing text from these sources is more challenging, as most of them are short in length and sometimes worst written.
+
+ 
+The task of sentiment analysis over text can be undertaken through two different approaches. For now, one can either utilize semantic approaches (Turney, 2002) or computational learning techniques (Pang, Lee, and Vaithyanathan, 2002).
+
+Approaches
+
+Semantic approaches to language processing can be defined using lexicons (dictionaries of words with their semantic direction of polarity). This such systems commonly pre-processes the text by tokenizing it into individual words and then apply processes like stop-words removal, normalization with stemming or lemmatization. Then a global polarity value is supplied to the text by summing up all the polarity values of each individual word present in that text, by looking up each word in the lexicon.
+
+Such approaches sometimes also consider conducting an advanced operation that includes modifier terms (like less, very, too, etc.) that either increase or decrease the polarity of the adjacent word, and negations or negative terms (like never, no, not) that reverses the polarity of the adjacent word.
+
+The main reason why one considers following a semantic approach is because correction of errors is relatively easy and by just investing more time in creating a better lexicon, adding more words and terms, we can apparently get a precision as high as we want it to be. Such simplicity is lacking in learning-based approaches which often act as a black-box where error correction and addition or updating new words and terms is quite complicated, and often requires re-training of the whole model with more text data to learn from.
+
+In contrast to semantic approaches, the learning-based approaches is based on utilizing machine-learning classifying algorithms, mostly a supervised learning algorithm based on Naïve Bayes, KNN (K-Nearest Neighbor) or SVM (Support Vector Machines). Apart from these mentioned classifier algorithms, a more advanced approach such as LSA (Latent Semantic Analysis) and Deep Learning, is being investigated recently. These classifiers are fed with annotated texts, where each text is typically represented by n-grams or skip-grams, bag of words or word vectors. These annotated texts can be combined with other features that can illustrate the semantic structure of the text being processed.
+
+The advantage of a machine-learning based approach is that it is easy to implement and is quick to build a model that conducts sentiment or opinion analysis which is trained with tagged text documents. As building such models is simple, thus it is comparably easy to build such models revolving around a specific domain or domains. Lexicon-based approaches fail to provide such feature of domain independency and adaptability, as different domains require lexicons to be created specific to that domain, from scratch, which is a very daunting task as lexicon creation is done manually.
+
+
+Machine-learning approaches are preferred over semantic approaches, when supplied with labelled collection, as these approaches is easily accustomed to different domains, thus saving a lot of manual effort in building lexicons for their respective domains. Hence, this method usually outperforms the semantic lexicon based methods which are much costlier to develop. 
+
+With the arguments above, we can then infer that learning based models adapt better to target domain, but re-training a model always when it is required to be transferred to a different domain. The model here works quite well in not so complicated cases, but cases where a more complex operation is required over the natural language texts, they fail. The model seems to fail when the sentences have a mix of polarities and includes inverse terms, comparators, etc.
+
+This project looks into the potential of a learning based method, that revolves around the idea of creating vector representation of part-of-speech tagged words in a vector-space dimension, and evaluate its results.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Literature Review
+
+The primary step to process a review text is by creating a Neural Network Language Model (NNLMs), which assigns a probability score to word sequences. Even though the initial inception of word embeddings was in 2003, by Bengio, et al. It has recently come up to be one of the most interesting topic in the domain of deep learning. Most prominently among these new techniques has been a group of related algorithms commonly referred to as Word2Vec which came out of google research.
+
+Word2vec is not a single monolithic algorithm but a two-layer neural net that processes text, comprising of two-distinct models (CBOW and skip-gram). 
+ It takes a text corpus as its input and generates a set of vectors as output. These vectors act as feature vectors corresponding to words in the corpus. While Word2vec is not a deep neural network, it turns text into a numerical form that deep nets can understand.
+
+Recently, information about character subsequences of words are being incorporated into the word vector representations for improving its performance in a lot of applications. A recent paper by researchers at Facebook AI (Piotr Bojanowski, Edouard Grave, et al.) used the approach of learning character n-gram representations to supplement word vector accuracy for ﬁve different languages to maintain the relation between words based on their structure. [2] In a paper by Google, Neural Machine Translation of rare words is performed using sub-word units obtained by segmenting words using the byte-pair encoding compression algorithm. Google’s Neural Machine Translation System divides words into limited set of common sub-word units (“word-pieces”) to handle the translation of rare words. It is reported to provide a balance between the ﬂexibility of character-delimited models and the efﬁciency of word-delimited models and improves the overall accuracy of the system. [3] Another work on incorporating morphological information into word representations by Alexandrescu and Kirchhoff (2006), introduced factored neural language models, where words are represented as sets of features. [4]
+
+Distributed representations of words in a vector space help learning algorithms to achieve better performance in natural language processing tasks by grouping similar words. One of the earliest use of word representations dates back to 1986 due to Rumelhart, Hinton, and Williams [13]. This idea has since been applied to statistical language modeling with considerable success [1]. The follow up work includes applications to automatic speech recognition and machine translation [14, 7], and a wide range of NLP tasks [2, 15, 16, 17, 18, 19, 20].
+
+The word2vec software of Tomas Mikolov and colleagues has gained a lot of traction lately, and provides state-of-the-art word embeddings. The learning models behind the software are described in two research papers [8, 9, 10]. We found the description of the models in these papers to be somewhat cryptic and hard to follow. While the motivations and presentation may be obvious to the neural-networks language-modeling crowd, we had to struggle quite a bit to ﬁgure out the rationale behind the equations. 
+
+Mikolov et al. [8] introduced the Skip-gram model, an efficient method for learning highquality vector representations of words from large amounts of unstructured text data. Unlike most of the previously used neural network architectures for learning word vectors, training of the Skipgram model (see Figure 1) does not involve dense matrix multiplications. This makes the training extremely efficient: an optimized single-machine implementation can train on more than 100 billion words in one day. The word representations computed using neural networks are very interesting because the learned vectors explicitly encode many linguistic regularities and patterns. Somewhat surprisingly, many of these patterns can be represented as linear translations. For example, the result of a vector calculation vec(“Madrid”) - vec(“Spain”) + vec(“France”) is closer to vec(“Paris”) than to any other word vector [8, 9].
+
+Xu et al. [21] and Lazaridou et al. [22] use visual cues to improve the word2vec representation by predicting real image representations from word2vec and maximizing the dot product between image features and word2vec respectively. While their focus is on capturing appearance cues (separating cats and dogs based on different appearance), we instead focus on capturing fine-grained semantics using abstract scenes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Methodology
+
+3.1	Review Dataset
+
+In this research, we used a text corpus consisting of text reviews given by users for products on Amazon. The corpus amalgamates user reviews for products falling under various categories. The number of unique categories residing in our dataset were found to be 88, where each of the categories had their own set of reviews.
+
+ 
+Fig. 1a		Categories vs Number of Reviews
+
+We can see in the plot above, in (Fig. 1a), the unique categories in our dataset on the x-axis and the height of the bar defines the number of reviews belonging to products of these categories on the y-axis. In this plot, we can clearly see the distribution of reviews through different categories in the dataset. “Books” being the largest reviewed category, whereas “Collectible Coins” were the least reviewed.
+
+
+ 	 
+categories 	#count_Reviews 
+Books 	22516062
+Electronics 	7625663
+Clothing, Shoes & Jewellery 	5357106
+Movies & TV 	4565757
+Home & Kitchen 	4248877
+CDs & Vinyl 	3770045
+Cell Phones & Accessories 	3432511
+Sports & Outdoors 	3234129
+Health & Personal Care 	2968775
+Apps for Android 	2633247
+
+
+Fig. 1b		Top 10 Categories with its reviews count.
+
+The table in (Fig. 1b), showcases us the top 10 reviewed categories with its review counts. As seen in (Fig. 1a), “Books” category is on top with a total of 22,516,062 reviews.
+
+
+ 
+
+Fig. 1c		Categories vs Number of unique users
+
+We have looked at the number of reviews each category has in the dataset, but as we are considering user-reviews, having information about the presence of unique users per category is essential. (Fig. 1c), displays us this vital information with the help of a bar plot. The categories are present on the x-axis, whereas the bar height signifies the number of unique users who reviewed products of that category. Here we can clearly see, “Books” again top this chart, with maximum unique users reviewing that category, whereas, “Collectible Coins” was the least again.
+
+3.2	Sampling Dataset
+
+Considering the overhead cost, as in memory consumption and computational power, sampling out the dataset was needed. A sample had to be extracted from the entire dataset in such a way, that it reduces the overhead cost as well as does not lose a lot of valuable information. Taking these facts into consideration, we chose to select the category “Movies & TV” as it held enough reviews and unique users to proceed with analysis.
+
+
+3.3	Dataset Insight
+
+The extracted dataset when ran through a process to analyze its constituency, fetched the following information:
+
+
+Measure	Value
+Reviews (Total):	4640261
+Unique Users (Total):	2064037
+Unique Items (Total):	196967
+Mean Reviews per User:	2.248148167886525
+Mean Reviews per Item:	23.55857072504531
+Dataset Density:	1.1413831595579591e-05 %
+ 
+Fig. 3a		Dataset Details
+
+
+
+
+ 
+Fig. 3b		Reviews vs Users
+
+In the histogram above, we can clearly see the following: 
+•	A maximum number of users just reviewed only 1 item. The number of users being above 7,000,000.
+•	The mean number of reviews per user in the dataset is 2.24814.
+
+ 
+
+Fig. 3c		Reviews vs Users (Inverse)
+
+Here in the graph above we can infer the following:
+•	100% of the users has been reached when the number of Reviews is about 48.
+•	A threshold of up to 48 reviews per user can be set as a minimum threshold to consider all the users present in the dataset. Helping us to extract a sample of the entire dataset, saving time and memory complexities.
+ 
+Fig. 3d		Reviews vs Users (Density)
+
+Here through the graph above we can infer: 
+•	As we consider setting a threshold on a minimum number of reviews per user, as this number increases we see that number of users satisfying this threshold declines gradually.
+•	At minimum reviews of 50, we lose more than 98% of the user profile.
+ 
+Fig. 3e		Reviews vs Items
+
+In the histogram above, we can clearly see the following: 
+•	A maximum number of items received just 1 review. The number of such items being above 6,700,000.
+•	The mean number of reviews per item in the dataset is 23.5585.
+
+ 
+Fig. 3f	Reviews vs Items (Inverse)
+
+Here in the graph above we can infer the following:
+•	100% of the items has been reached when the number of Reviews is about 38.
+•	A threshold of up to 38 reviews per item can be set as a minimum threshold to consider all the users present in the dataset. Helping us to extract a sample of the entire dataset, saving time and memory complexities.
+
+ 
+
+Fig. 3g		Reviews vs Items (Density)
+
+Here through the graph above we can infer that:
+•	As we consider setting a threshold on a minimum number of reviews per item, as this number increases we see that number of items satisfying this threshold declines gradually.
+•	At minimum reviews of 38-39, we lose about 98-99% of item profiles.
+
+ 
+Fig. 3h		Mean Rating per User
+
+
+Here from the histogram above, we can infer the following:
+•	A paramount of users gave items a maximum rating, i.e. 4-5 "stars".
+•	If we compute the mean of the total ratings given by a user then the mean computed is 4.2378.
+•	The mean being inclined to the positive side infers that most of the items were good, and these users liked it.
+
+
+ 
+Fig. 3i		Mean Rating per User (Density)
+
+Here in the graph above we can infer the following:
+•	100% of the users has been reached when we consider the mean rating of 4.0.
+•	A threshold of up to 38 reviews per item can be set as a minimum threshold to consider all the users present in the dataset. Helping us to extract a sample of the entire dataset without any leftover user, which saves us from time and memory complexities.
+
+ 
+Fig. 3j		Mean Rating per User (Cumulative)
+
+Here through the graph above we can infer that: 
+•	As we consider setting a threshold on mean rating by a user; as we increase the threshold we see that number of items satisfying this threshold declines gradually.
+•	At a minimum mean rating of 4.0, we lose about 21-22% of the user profiles.
+
+ 
+Fig. 3k		Mean Rating per Item
+
+Here in the histogram above, we can infer the following:
+•	A paramount of items received a maximum rating, i.e. 4-5 "stars". Which validates our above inference of user rating majority of items as so.
+•	If we compute the mean of the total ratings received by an item, then the mean computed is 4.012075.
+•	The mean being inclined to the positive side infers that most of the items were reviewed positively, and the users really liked it.
+
+ 
+Fig. 3l		Mean Rating per Item (Density)
+
+Here in the graph above we can infer the following:
+•	100% of the items has been reached when we consider the mean rating of 4.0.
+•	A threshold of up to a mean rating of 4.0 per item can be set as a minimum threshold to consider all the items present in the dataset. Helping us to extract a sample of the entire dataset without any leftover item, which saves us from time and memory complexities.
+
+ 
+Fig. 3m		Mean Rating per Item (Cumulative)
+
+Here through the graph above, we see that:
+•	Considering setting a threshold on mean rating received by an item; as we increase the threshold we see that number of items satisfying this threshold declines gradually.
+•	At a minimum mean rating of 4.0, we lose about 36-38% of the item profiles.
+
+
+3.4	Text Pre-processing
+
+i.	Normalization
+
+The initial task in natural language text processing is to normalize the texts we are dealing with. Normalization constitutes of various processes like the removal of punctuations, converting the entire text into upper or lower case, expanding abbreviations, etc. For the sake of simplicity and withholding the general traits of a user giving a review, we just normalized our text corpus by converting all of its texts into a lowercase representation.
+
+
+
+ii.	Tokenization
+
+Tokenization in the field of lexical analysis refers to the process of splitting a text document into its constituting words, referred as tokens. These tokens thus help us carry out our processes to the word level of a text document.
+
+
+iii.	Stop-words removal
+
+Every language has a set of extremely common words which adds little value to the context and in the computation of matches between users and products. These words are called Stopwords and are filtered out from the text corpus before or after NLTP processes. Stopwords generally refer to the most common terms in a language, but still, there is no single universal list of these words. Consideration of such filter and the list totally depends on the application of the process and the domain we are dealing with. In the domain of micro-blogging networks like “Twitter”, stop-word removal is generally not considered, as the tweet itself contains a limited number of words, and removal of stop-words from it would result in eliminating valuable contextual information. One should also consider the domain of the text corpus they are working on, as the stop-words differ from domain to domain. A general strategy for creating a stop list in a particular domain is to sort the terms based on their collection frequency, i.e. the total number of times a term appears in the text corpus, and filter out these words based on their minimal impact on the semantic meaning of the text. Removal of such words from the corpus drastically reduces the size of it, and therefore reduces the processing time and memory consumption by it.
+
+As we are dealing with user-reviews in English, we utilized the stop-words list of NLTK Python package itself and extended the list by appending punctuations and redundant artifact symbols. With the help of this list, we filtered out stop-words from our text corpus, thus reducing its size.
+
+iv.	Stemming/Lemmatization
+
+Stemming or Lemmatization refers to the process of reducing inflectional forms and sometimes derivationally related forms of a word to its common base form. Even though both the processes have the same goal, they differ in its method of application. A Stemmer is a crude heuristic process that chops off the ends of words with a hope of achieving this goal correctly most of the time, and often includes the removal of derivational affixes. Lemmatization, on the other hand, utilizes vocabulary and morphological analysis of the words, normally aiming to remove inflectional endings only and to return the base or dictionary form of a word, which is known as the lemma. [100]
+
+In our project, we considered not utilizing these tools, because we did not want to lose the raw terms utilized by the users in writing the review. Upholding this notion would help us determine the choice of words people generally use to give a good or a bad review in the domain of “Movies & TV”.
+
+
+
+v.	Part-Of-Speech Tagging
+
+Part-of-speech tagging (POS tagging) in natural language text processing linguistics refers to the process of supplying a tag to each word present in the text document, based on the definition and the contextual meaning of the word, i.e. its relationship with other words present in the phrase or sentence. A POS tag thus holds information about the grammatical category a word belongs to, such as nouns, verbs, adjectives, etc. POS tagging is essential because they can provide a great amount of information about the word and its adjacent words. They can also help us to know about the syntactic structure around the word, making POS tagging an important process during syntactic parsing.
+
+3.4	Word2Vec Model
+
+Word2Vec, as discussed earlier, is a two-layer neural net (not a single monolithic algorithm) that is used to process text.
+Word2vec converts text document into a numerical representation of individual words in the text document as vectors, that makes sense to deep net. It groups these vectors of similar words together in a vector-space to detect similarities through computation. All the mentioned task is conducted without any human intervention. If we provide our Word2Vec model with sufficient data, it can then make very accurate guesses about a word’s meaning based on its past appearances in the text corpus. These guesses can help us to establish a word’s association with other words (e.g. “king” is to “man” what “queen” is to “woman”). Even clustering similar documents and labelling them is possible with this model.
+Word2Vec itself contains two distinct models called Skip-gram and Continuous Bag of Words (CBOW).
+
+i.	Skip-grams
+
+Skip-grams is one of the most prevalent techniques used in the domain of text processing. In this process, not only n-grams are formed (bi-grams, tri-grams, etc.) but it also allows words to be “skipped”. Initially, it was applied to phenomes in human speech, but now the same technique is being utilized in words. [103]
+For example, a sentence like “The dog ate the biscuit” has three trigrams that emerge out: “The dog ate”, “dog ate the”, “ate the biscuit”. However, we can clearly see there is one more tri-gram in the given sentence which is of equal importance and has not been captured, which is “dog ate biscuit”. Skip-grams thus help us to skip the word “the”, and extract the hidden tri-gram.
+Skip-grams have been in circulation for various tasks in text processing and were often used in combination with different other language modeling techniques. (Goodman, 2001; Rosenfeld, 1994; Ney et al.,
+1994; Siu and Ostendorf, 2000).
+
+We usually define a k-skip-n-grams for a sentence w1, w2, w3, … wn to be the set:
+ 
+Skip-grams when processed over a text is defined to construct n-grams by allowing k or less words to be skipped in total. For instance, if the model is a “3-skip-n-gram”, the resulting n-grams that would be generated by the adjacent words would be through 3 skips, 2 skips, 1 skip and 0 skips.
+If we consider the following sentence “Rooney retires from international football”, and extract bi-grams and tri-grams with and without utilizing 2-skip-n-gram model, we get:
+
+Bi-grams: “Rooney retires”, “retires from”, “from international”, “international football”.
+2-skip-bi-grams: “Rooney retires”, “Rooney from”, “Rooney international”, “retires from”, “retires international”, “retires football”, “from international”, “from football”, “international football”.
+
+Tri-grams: “Rooney retires from”, “retires from international”, “from international football”.
+
+2-skip-tri-grams: “Rooney retires from”, “Rooney retires international”, “Rooney retires football”, “Rooney from international”, “Rooney from football”, “Rooney international football”, “retires from international”, “retires from football”, “retires international football”, “from international football”.
+
+As we can see from the count comparison of n-grams generated, 2-skip-tri-grams generates thrice the number of tri-grams than it was initially. The number of tri-grams generated by k-skip-n-grams increases exponentially when we increase k value, to consider more number of skips.
+ 
+
+Fig. 3n		Skip-gram model
+
+ii.	Continuous Bag-of-Words (CBOW)
+
+In Continuous bag of words model, a context is represented using multiple words for a given target words. For example, one can consider using words for the context word “drinks” as “man” and “beer”. A modification in the neural net architecture is wanted then to showcase this approach. We modify the Skip-grams model as in Fig. 3a, by replicating the input to hidden layer connections C times, the number of context words, and adding a divide by C operation in the hidden layer neurons.
+
+ 
+
+Fig. 3o		CBOW model
+
+
+To implement Word2Vec we have used the tool Gensim, which is a robust open-sourced vector space modeling toolkit implementation in Python. Gensim utilizes various other Python packages like NumPy and SciPy, and to make the generation of these vectors more efficient and to gain performance, Gensim optionally utilizes Cython (an optimizing static compiler for Python based on C programming language) for it.
+
+
+3.5	t-SNE Clustering
+
+On creation of the model and training it, we can visualize the learned embeddings using t-SNE. t-SNE is a great tool to visualize high-dimensional data. It does so by converting similarities between data points to joint probabilities and then it tries to minimize the Kullback-Leibler divergence between the joint probabilities of the low-dimensional embedding and the high-dimensional data. t-SNE has a cost function that is not convex, i.e. with different initializations we can get different results. [104]
+
+t-SNE lets us to customize the clustering method with various tweaks with its parameters. The parameters tweaked for this project are as follows:
+i.	n-components: It defines the dimension of embedded space. The parameter value was set to be 2 here.
+ii.	perplexity: The perplexity is related to the number of nearest neighbors that is used in other manifold learning algorithms. Larger datasets usually require a larger perplexity. Consider selecting a value between 5 and 50.
+iii.	random_state: If a int is provided the random_state is the seed used by the random number generator. If it is a RandomState instance, then random_state is the random number generator and if it is None, the random number generator is the RandomState instance used by np.random. The different initializations results in different local minima of the cost function.
+During this project, we considered not having a randomization of the state, so a int value of 0 was supplied.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Results and Evaluation
+
+
+The purpose of this thesis was to conduct a machine-learning approach to analyze the sentiment polarity of a user-reviews of a specific domain. Going by this notion, we have extracted “Movies & TV” user reviews from Amazon Review Dataset which we already had, and created a Word2Vec model first with untagged tokens, and then with tagged tokens, so to compare the performance and precision.
+
+4.1	Pre-processing
+
+The text documents or user-reviews present in our “Movies & TV” corpus was passed through a list of pre-processing algorithms as mentioned before, which includes tokenization, normalization and stop-words removal.
+After going through these processes, a text sentence like “What an eye-opening, inspiring, mind-changing movie.” Would be converted to a list of tokens as “[what, an, eye, opening, inspiring, mind, changing, movie”.
+
+Here is the top 10 user-reviews in the table generated, when a sample of our dataset was passed through the pre-processing function.
+
+Fig. 4.1.a		Processed user-reviews
+
+As we can see in the table above the “reviewText” column which corresponds to user-reviews given to the products in the “Movies & TV” category is un-processed, raw form of the reviews, and the column “reviewTextProcessed” holds the processed form of the user-reviews which went through three stages of text processing i.e. tokenization, normalization and stop-word removal.
+
+Part-of-Speech tagging was then conducted over these processed text reviews with the help of spaCy (a library for advanced natural language processing in Python and Cython). By utilizing the part-of-tagging functionality of spaCy, we could pos-tag our entire dataset utilizing less resources and time as compared to using nltk package for pos-tagging.
+
+Part-of-speech was conducted in a way that the pos-tag (following the nltk pos tags list) of the term is attached to the original word with a pipe ‘|’ sign at its rear position. The process of part-of-speech tagging generates a list of user-reviews with their words tagged based on their contextual semantic structure.
+For example:
+['finally|RB', 'movie|NN', 'with|IN', 'substance|NN', 'inspired|VBN', 'by|IN', 'true|JJ', 'events|NNS', 'and|CC', 'inspirational|JJ']
+
+The part-of-speech tags conjugated to the words are as follows:
+•	CC: coordinating conjunction
+•	CD: cardinal digit 
+•	DT: determiner 
+•	EX: existential there (like: "there is")
+•	FW: foreign word 
+•	IN: preposition/subordinating conjunction
+•	JJ: adjective, like 'big'
+•	JJR: adjective, comparative, like 'bigger'
+•	JJS: adjective, superlative 'biggest'
+•	LS: list marker
+•	MD: modal could, like will
+•	NN: noun, singular, like 'desk'
+•	NNS: noun plural, like 'desks'
+•	NNP: proper noun, singular, like 'Harrison'
+•	NNPS: proper noun, plural, like 'Americans'
+•	PDT: predeterminer, like 'all the kids'
+•	POS: possessive ending, like parent's
+•	PRP: personal pronoun, like I, he, she
+•	PRP$: possessive pronoun, like my, his, hers
+•	RB: adverb, like very, silently, 
+•	RBR: adverb, comparative, like better
+•	RBS: adverb, superlative, like best
+•	RP: particle, like give up
+•	TO: to go 'to' the store.
+•	UH: interjection
+•	VB: verb, base form, like take
+•	VBD: verb, past tense, like took
+•	VBG: verb, gerund/present participle, like taking
+•	VBN: verb, past participle, like taken
+•	VBP: verb, sing. present, non-3d, like take
+•	VBZ: verb, 3rd person singular present, like takes
+•	WDT: wh-determiner, like which
+•	WP: wh-pronoun, like who, what
+•	WP$: possessive wh-pronoun, like whose
+•	WRB: wh-abverb, like where, when
+Here, I feel the main pos-tags that hold most value in a statement are JJ (adjectives), NN (nouns) and VB (verbs). These three speech context tags theoretically build the meaning of the statement as whole.
+
+4.2	Word2Vec
+
+For the generation of a Word2Vec model we utilized an already available open-source package called Gensim. It is a popular Python library used for topic modelling, document indexing and similarity retrieval with large corpora having a target audience in the fields of natural language processing (NLP) and information retrieval (IR) community. [107] Gensim requires NumPy and SciPy for scientific calculation, thus having them pre-installed is compulsory. For faster Word2Vec model training and processing, one can also have Cython installed on their system, as then Gensim fires up the C implementation of Word2Vec which is way faster than that of the Python implementation.
+
+Training the Word2Vec model present in the Gensim package, with the processed user reviews:
+
+model = gensim.models.Word2Vec(list(dataset['reviewTextProcessed']), min_count=10, size=600, workers=20)
+
+Here the parameters set are:
+•	min_count, which is set to 10, which means that the word must have a occurence frequency of at-least 10, this way we can filter out any mis-spelled words or any typo-errors. Having a higher min_count is not suggested as it may lose such vital words which are new and is in use by current millennia people in their natural language.
+•	size, which is the number of dimensions in the vector space, where the word vectors are assigned, is set to be 600. The size of dimensions to be considered depends of the size of the corpus that is used to train the model.
+•	workers, corresponds to the number of parallelization of the total process into multiple threads. The number of workers depends on the computational power of the machine where the model is conducted.
+
+
+The user reviews provided for training of the Word2Vec model here were the processed text that undergone the three stages of pre-processing (tokenization, normalization and stop-words removal). On training with these reviews, we tried to evaluate our trained model using the model feature of predicting the most similar words according to the query or word supplied by us.
+
+
+
+Evaluation:
+
+a)	Query:		model.most_similar(['fun'])
+
+Result:		[('enjoyable', 0.6884727478027344), ('entertaining',
+0.6504397392272949), ('cute', 0.6087207198143005),
+('great', 0.6073422431945801), ('funny',
+0.6013754606246948), ('nice', 0.5871987342834473),
+('exciting', 0.5864048004150391), ('delightful',
+0.5563967227935791), ('wholesome', 0.5561399459838867),
+('good', 0.5479496717453003)]
+
+b)	Query:		model.most_similar(['king','woman'],negative=['man'])
+
+Result:		[('queen', 0.7108173370361328), ('mary',
+0.5958919525146484), ('prince', 0.5917333960533142),
+('bride', 0.58794105052948), ('carrie', 0.5827226638793945),
+('lion', 0.5820587873458862), ('elizabeth',
+0.5736621618270874), ('dorothy', 0.5721542835235596),
+('anne', 0.5624659657478333), ('mrs', 0.5590327978134155)]
+c)	Query:		model.most_similar(['awesome','bad'],negative=['fun'])
+Result:      	[('terrible', 0.6763127446174622), ('horrible',
+0.6721887588500977), ('awful', 0.6578158140182495),
+('lousy', 0.6208399534225464), ('awsome',
+0.6108125448226929), ('horrid', 0.5852782726287842),
+('atrocious', 0.5811731219291687), ('poor',
+0.5507168769836426), ('crappy', 0.5349428653717041),
+('amazing', 0.5320942401885986)]
+
+
+Here we can see that, our Word2Vec model fetches the most similar word correctly, but there is still existence of words which are polarly opposite to the rest of the words, which are predicted incorrectly. Seeing that the error in prediction is of just 1 or words in the list of 10 words, we can say that our Word2Vec model performed quite well.
+
+
+
+
+
+
+
+4.3	Sense2Vec
+Introduction of Word2vec model by Mikolov et al. proved to be no less than a paradigm shift in the field of natural language text processing. It gave machine-learning based approaches of text analytics a great boost and an edge over the standard lexicon based approaches. Even though it has such potential, it fails to capture the contextual information, placement and semantic structure of the words in a given text (phrase, statement or paragraph).
+In the year 2015, Andrew Trask along with Phil Michalak and John Liu, came with an idea of Sense2Vec, which was claimed to be a fast and accurate method for word sense disambiguation in neural word embeddings. Sense2Vec (Trask et al.) is regarded as a new revision of the Word2Vec model, that allows us to learn more complex, interesting, detailed and context sensitive word vectors.
+When natural text language is considered, we humans while writing dictionaries and thesauruses, we define concepts related to other concepts [105]. The Word2Vec family of models is the most popular way of creating dictionaries that defines the concepts in terms of their usage statistics. If we provide the Word2Vec model with enough text data, it fetches us a dictionary where each term is a row of n floating point numbers. The Word2Vec model handles operations in terms of checking the similarity between words – where we ask the model to find out similar words to a given word or to check if two given words are similar, when asked so, the model checks the definitions of these terms in the dictionary generated.
+Word2Vec model does not consider the contextual meaning of a word in a statement, it faces a vital problem called “polysemy”. Polysemy refers to the association of one word with two or more distinct meanings. A polyseme is a word or phrase with multiple meanings. Polysemy is in contrast with monosemy, which refers to one to one match of a word to its meaning, thus a word only has utmost one distinct meaning. According to William Croft, "Monosemy is probably most clearly found in specialized vocabulary dealing with technical topics" (The Handbook of Linguistics, 2003). As reported by some estimates, in English language there are around 40% or more words having multiple meanings attached to it. The very fact that there is existence of such a major portion of words in a language which are regarded as polysemous convey us that “semantic changes often add meanings to the language without subtracting any" (M. Lynne Murphy, Lexical Meaning, 2010).
+As Word2Vec faces a problem of polysemy, it fails to capture the true meaning of a word in a text document. With words like “board” having multiple meanings as of a long and thin piece of timber or daily meals or an official group of persons who direct and supervise some activity, the Word2Vec fails to capture the true meaning of these words in the context they were supposed to mean. Nalisnick and Ravi (2015) noticed this problem, and suggested that we should allow word vectors to grow arbitrarily, so that we can conduct a better task of modelling complicated concepts. Although it seems to a good approach for subtle sense differentiation, but for cases like “board” it's not so noteworthy. What is wanted is that we treat different words with their different meanings as different vectors, as to acknowledge which specific meaning of the word is referred to in the usage. This is where Sense2Vec model comes in, it extends the functionality of Word2Vec models by training the model with not just the raw terms, but attaching those words with their part-of-speech tag. When we attach POS-tags to each word, we are then explicitly making the Word2Vec model to treat them as different words, thus eliminating the problem of polysemy without losing any information.
+ 
+Fig. 4.3 a		A graphical representation of Sense2Vec (Trask et al.)
+
+
+When Sense2Vec model is supplied with enough labeled text data with one or more POS-tag labels attached to each term, the model’s first task is to count the number of uses (where each unique word is mapped to a set of one or more labels or uses) of each word and generates a random sense embedding for each use. The model then undergoes training phase using either Continuous bag-of-words, Skip-gram or Structured Skip-gram algorithm as per our configuration. Thus, a Sense2Vec works not by predicting a word by their surrounding word but by predicting a word’s sense by the surrounding senses.
+
+We have trained the very same Word2Vec model supplied by Gensim package, but now with the tagged texts.
+
+model = gensim.models.Word2Vec(list(dataset['reviewTextProcessed']), min_count=10, size=600, workers=20)
+
+
+
+
+Evaluation:
+
+a)	Query:	      model.most_similar(['fun|NN'])
+
+Result:      [('fun|JJ', 0.8346077799797058), ('enjoyable|JJ',
+      0.6240156888961792), ('fun.the|JJ', 0.6075842380523682),
+      ('entertaining|VBG', 0.5681679844856262), ('entertaining|JJ',
+      0.5469264984130859), ('funny|JJ', 0.49725762009620667),
+      ('silly|JJ', 0.48210757970809937), ('cute|JJ',
+      0.4644203782081604), ('enjoy|VB', 0.4610881209373474),
+      ('goofy|JJ', 0.4558631181716919)]
+
+b)	Query:         model.most_similar(['awesome|JJ','bad|JJ'],negative=['fun|JJ'])
+
+Result:          [('terrible|JJ', 0.5998219847679138), ('horrible|JJ',
+        0.589005172252655), ('sucks|VBZ', 0.541930079460144),
+        ('lousy|JJ', 0.5264757871627808), ('sucked|VBD',
+        0.512358546257019), ('awful|JJ', 0.5103888511657715),
+        ('aweful|JJ', 0.5092966556549072), ('crappy|JJ',
+        0.5049660205841064), ('awsome|NN', 0.5032873153686523),
+        ('good|JJ', 0.5010189414024353)]
+
+c)	Query:         model.most_similar(['war|NN','movie|NN'])
+
+Result:          [('film|NN', 0.6309832334518433), ('ww2|NN',
+        0.5286853313446045), ('wwii|NN', 0.5217652320861816),
+        ('war.i|NN', 0.5178101062774658), ('movies|NNS',
+        0.5173385739326477), ('war.the|NNP', 0.4902089536190033),
+        ('story|NN', 0.4505111873149872), ('ww2|NNP',
+        0.4499706029891968), ('ww|NN', 0.4490077495574951),
+        ('spr|NN', 0.4444739818572998)]
+In comparison to the previous result by Word2Vec model, our Sense2Vec model performs better in predicting the most similar words, as this time the model is considering the contextual information attached to every term. The error in prediction previously made by Word2Vec by including polarly opposite words in the list of predicted words and assigning them higher score is also fixed, as we can see those words are at the bottom of the list. When given words like “fun” our model fetches words “fun”, “enjoyable”, “entertaining”, “funny”, “silly”, etc. and with words like “war”, it predicts words like “wwii”, “ww.i”, “ww2”, etc. signifying world-wars - which have been assigned the greatest score. Even when we are passing a complex query like “fetch me words that is like awesome and bad, but not the words similar to fun” – and our model captures the words “terrible”, “horrible”, “sucks”, “lousy”, etc. (which are adjectives displaying the emotion). The error rate of fetching us words out of context or irrelevant decreases dramatically, thus increasing the prediction power of our model significantly.
+4.4	t-SNE Clustering
+
+As discussed before, after creation of the model and training it, we can visualize the learned embeddings using t-SNE, which is a popular and great tool to visualize high-dimensional data.
+
+We used t-SNE clustering to visualize the word vectors present in both of our models (Word2Vec and Sense2Vec), on a 2-dimensional plane. With Sense2vec model we also tried grouping the word vectors with respect to their tags.
+
+i.	t-SNE cluster plots of Word2Vec model
+
+
+ 
+Fig. 4.4 a	t-SNE cluster of the entire Word2Vec model
+
+
+The cluster when entire vocabulary of the Word2Vec is considered looks like a big blot, with maximum density in the middle of the plot, thus being very difficult to visualize what vector corresponds to what term in the text corpus. To get a better picture, we must limit the number of vectors shown on the plot.
+By limiting the vectors being represented on the plots by many 100-500, we can clearly see individual vectors, and even apply annotation to our plots as the labels beside their corresponding vector, these labels being the word name itself. Such representation is highly required if we want to visualize where each term is represented and their surrounding vectors in the vector space. 
+
+
+Fig. 4.4 b	t-SNE cluster of 500 words from the Word2Vec model
+
+ 
+Fig. 4.4 b (Zoomed)
+Here from the plot above (Fig. 4.4 b), we can see that the words making up clusters are non-related, as Word2Vec model considers assigning similarity between words based on the surrounding words. This way t-SNE shows us the clusters of words which by the Word2Vec model is said to be similar. But looking closely at the zoomed-up plot figure, we can see there is no definitive pattern to why the words are there in the cluster, they do not share the same meaning or is used in same context.
+
+ii.	t-SNE cluster plots of Sense2Vec
+With Sense2Vec we tried to utilize the semantic knowledge which we gained from having part-of-speech tags attached to it. As two main part-of-speech components of a sentence is the noun (NN) and the adjective (JJ), we passed different words of one tag to our model which are prevalent to the domain “Movies & TV”, and fetched the most similar words of the other tag from the model. This is done to extract the information of how a noun or adjective is related to each other in natural language, helping us to understand semantic structure much better.
+ 
+Fig. 4.4 c	t-SNE cluster “amazing|JJ” vs NN (Sense2Vec)
+ 
+Fig. 4.4 c	(Zoomed)
+
+
+ 
+Fig. 4.4 d	t-SNE cluster “awesome|JJ” vs NN (Sense2Vec)
+
+ 
+Fig. 4.4 d	(Zoomed)
+
+
+
+
+
+
+ 
+Fig. 4.4 e	t-SNE cluster “worst|JJ” vs NN (Sense2Vec)
+ 
+Fig. 4.4 e	(Zoomed)
+
+
+
+
+
+ 
+Fig. 4.4 f	t-SNE cluster “ok|JJ” vs NN (Sense2Vec)
+ 
+Fig. 4.4 f	(Zoomed)
+
+In the plots above, where we plotted the adjectives against top 500 nouns with respect to the similarity between them, we can see the adjective is surrounded by the noun words. 
+Here is the list of noun words found is close proximity to the adjective words supplied to the model as a query:
+Adjective (query word)	Noun (predicted words)
+amazing	picture, comedy, guy, course, plot, series, movie, etc.
+awesome	family, music, soundtrack, battle, place, video, etc.
+worst	idea, horror, music, star, couple, movie, etc.
+ok	star, rating, guy, home, couple, death, etc.
+Looking at the list of noun words appearing in close proximity to the adjective word, we can infer that people usually talk about the movie itself, acting, star cast involved, idea behind or the place shown, to be vital components in their reviews i.e. they usually talk about them. We selected adjective words from extreme positive polarity to extreme negative, and a neutral one, to examine the relation between the nouns and these adjective, and by far we can say that extreme emotions when portrayed through reviews for a movie or tv show were more critical, covering more aspects or components of it. 
+After plotting adjective word against the nouns, we tried doing the opposite i.e. plot a noun word against its 500 most similar adjective words. By doing so, we got the following plots:
+ 
+Fig. 4.4 g	t-SNE cluster “movie|NN” vs JJ (Sense2Vec)
+
+ 
+
+Fig. 4.4 g	(Zoomed)
+ 
+Fig. 4.4 h	t-SNE cluster “drama|NN” vs JJ (Sense2Vec)
+ 
+Fig. 4.4 h	(Zoomed)
+ 
+Fig. 4.4 h	t-SNE cluster “war|NN” vs JJ (Sense2Vec)
+
+
+Having noun words against the similar adjective words in the plots above, we get a more insightful picture of the entire text corpus. The adjective words surrounding the noun word makes much more sense in terms of similarity.
+Here is the list of adjective words which were found surrounding the noun word supplied to the model as a query in close proximity:
+Noun (query word)	Adjective (predicted words)
+movie	sad, emotional, entertaining, interesting, etc.
+drama	personal, original, political, intense, powerful, etc.
+war	japanese, british, american, realistic, etc.
+As we can see, these adjectives surrounding the noun word tried to describe the noun word in question, and they were successful to describe it very efficiently. We often use words like original, intense and powerful to describe a drama, or usage of words like sad, emotional and entertaining are the most common words used from our vocabulary to describe a movie. As most war movies are based on the stories from American, British or Japanese history, hence the occurrence of these words in such close proximity is of no surprise.
+iii.	Adding sentiment polarity to word vectors
+The sentiment polarity is a verbal representation of the sentiment. It can be "negative", "neutral", or "positive". The sentiment score is a more precise numerical representation of the sentiment polarity. A sentiment score based on its implementation can vary from -1 to 1, where -1 denotes extreme negative, 1 denotes extreme positive and 0 is neutral in sentiment.
+As we have found adjectives showcasing a lot of information in describing a noun, we considered assigning polarity values to these words, and colouring them red (for negatives) and green (for positives) – the polarity score itself would be the alpha values to these scatter points. Alpha value here governs the translucency of the scatter points, by supplying this value, in our visualization we can then differentiate the intensity of a sentiment word through the shade of its colour, the more intense the sentiment is of a word, the darker shade it would be. To supply this polarity score we have utilized the feature of TextBlob. TextBlob is a python natural language processing toolkit, which stands on the shoulders of giants like NLTK and Pattern, providing text mining, text analysis and text processing modules for python developers.
+We thus utilize the feature of polarity scoring of TextBlob, by passing our word vector names present in the clusters formed by t-SNE, and store the polarity score of each term inside a dataframe with its corresponding word name, POS-tag and x,y positional values.
+
+x	y	word	tag	polarity
+-41.055722	3.5583	movie|NN	NN	0
+-35.845171	24.642604	good|JJ	JJ	0.7
+-39.696525	22.179801	great|JJ	JJ	0.8
+7.234464	23.002872	little|JJ	JJ	-0.1875
+-28.111664	28.530151	bad|JJ	JJ	-0.7
+-4.990301	18.622589	old|JJ	JJ	0.1
+-8.758605	-7.358019	new|JJ	JJ	0.136364
+-31.90744	9.545364	real|JJ	JJ	0.2
+-22.865996	-9.149053	original|JJ	JJ	0.375
+-28.41303	20.121864	funny|JJ	JJ	0.25
+
+Fig. 4.4 i	Table showcasing word with its polarity and POS-tag
+
+When we pass this word vectors, to be plotted on the graph by its positional x and y values, and colored according to its polarity value, we get the following plots:
+
+ 
+Fig. 4.4 j	t-SNE cluster “movie|NN” vs JJ (Sense2Vec) with Polarity
+ 
+Fig. 4.4 j	(Zoomed)
+ 
+Fig. 4.4 k	t-SNE cluster “drama|NN” vs JJ (Sense2Vec) with Polarity
+ 
+Fig. 4.4 k	(Zoomed)
+
+ 
+Fig. 4.4 l	t-SNE cluster “fight|NN” vs JJ (Sense2Vec) with Polarity
+
+ 
+Fig. 4.4 l	(Zoomed)
+
+
+After assigning polarity scores and coloring the word vectors according to how negative or how positive they are with respect to their sentiment or opinion, we can clearly see zones of positive or negative words forming around a noun word. Formation of these zones tell us more about the relationship between that noun with adjectives that were present along with it.
+
+Looking at the individual plots (fig. 4.4 j,k and l), we can infer that:
+i.	movie|NN: There are two distinct zones of extreme polarity words. As marked. Having a majority of green zone closer to the word signifies that:
+a.	Most of the movies in the review are positively rated. People tend give a positive review with words like “beautiful”, “gorgeous”, “awesome”, etc. Even “surprising” is one of the extreme positive adjectives here. But we can also notice that TextBlob fails to define “epic” word as one of those extreme positive words, as people now have developed a vocabulary of substituting words like “awesome” as “epic”. 
+b.	Most of the negative words were defining the plot of the movie, as “weak”, “lame”, “dumb”, etc. and not the cast and crew. This means that whenever someone gave a negative review they were quite critical to the components of a movie or a tv show, like story, plot, etc.
+
+ii.	drama|NN: Here we can see the following happening:
+a.	 The words below the given noun (“drama”) are positive, and words above it is negative. Going further up in the chart, it’s all positive again.
+b.	In context of a drama words like sad, emotional, tragic, etc. can be words to actually compliment it or to be reviewed about. Thus, such words are in close proximity to the word “drama”. What fails here is the polarity scoring done by TextBlob, which could not capture the contextual meaning of the words with the central word, hence the words that could be for complimenting were also marked as highly negative words.
+
+
+iii.	fight|NN: In the plot figure generated for the noun word “fight” we can see that:
+a.	There are less words in close proximity of the noun, which can indicate that there were less co-occurrences of these adjectives with the word “fight”.
+b.	There are only positive words in one zone of the plot, and one where there are only negative words in the cluster. As marked in the figure, we can thus see that there are two distinct zones of both polarities (positive and negative), which can signify that words having similarity score in a specific zone for the word “fight” would always have a positive sentiment for the word or a negative sentiment if they fall in the other similarity score zone.
+
+Regardless of the fact that we can visualize clusters or zones forming on the scatter plot of positive and negative sentiment polarity, we still cannot see any pattern popping out. This can be due to failure of TextBlob, where it could not capture the contextual meaning of a word, thus giving an erroneous polarity score to it, or it could be because of the sampling done for representing the word vectors on the plot to be readable. If it was possible to visualize the entire vocabulary onto the plot and still be readable enough, we could have had a much more insight on the vector distribution.
+
+Even though, no such pattern is clearly visible at the moment, but having the information of these zones appearing can be a good start for future investigations. One can classify and build their own domain specific lexicon or dictionary automatically, by running the entire process at once. Classifying the words found in such dense clusters would then help to capture sentiment polarity as the group average for the cluster, and store them in their respective positive or negative word list. This way one can generate a basic dictionary having contextual information of each word accompanied with the sentiment polarity of it. Hence, a less of manual driven approach is obtained.
+
+
+
+
+
+
+
+
+
+
+
+Conclusion
+
+In this project we evaluated the potential of a simple Word2vec model as well as compared it to a Sense2Vec model taking idea from (Trask et al) for word sense disambiguation. A Sense2Vec takes advantage of context clustering to differentiate senses or contextual meanings of the words, by learning through supervised labeling. In contrast to un-supervised clustering methods, the approach of a supervised labeling is by assigning the part-of-speech tags to the words by analyzing its contextual meaning. By doing so we highly diminish the computational cost in creation and training of the model and make use of extra information we gained from utilizing the contextual meaning of words.
+
+Sense2Vec showcases great potential in the field of sentiment analysis over natural language text processing, eliminating a major problem (polysemy) of a Word2Vec model. Trask et al. in his paper for Sense2Vec conveys that “disambiguated embeddings can increase accuracy of syntactic dependency parsing in variety of language”. Thus, building a model that is domain and language portable can be quite plausible and easy to implement.
+
+In our investigation we found that we are still not able to harness the true potential of the Sense2vec model. It is limited by the accuracy and implementation of other Python packages that were utilized during the phases of construction, training and visualization of the word vectors. Hence, a better approach in tweaking and adjustment of parameters is wanted, with that one should also explore extending the Sense2Vec model implementation with that of Doc2Vec and Latent Semantic Indexing (LSI) or Latent Sematic Analysis(LSA), which are gaining a lot of popularity these days.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Appendix A
+
+
+Implementation code for the project
+
+The implementation code that was utilized and run to conduct the operations of pre-processing of the text as well as creation, learning and evaluation of the Word2Vec and Sense2Vec models can be found at the following git repository on Github: 
+
+https://github.com/insight-ucd/vivek_thesis.git
+
+The codes is separated in three different iPython notebooks, where Part 1 deals with initial dataset analysis, Part 2 deals with dataset extraction and initial text processing, and Part 3 deals with POS-tagging and creation, learning and evaluation done on the word vector models.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+References 
+
+[1] Proceedings of the 40th Annual Meeting of the Association for Computational Linguistics, (2002), Philadelphia, Pennsylvania, 417-424.
+[2] Piotr Bojanowski, Edouard Grave, Armand Joulin, and Tomas Mikolov. Enriching word vectors with subword information. arXiv preprint arXiv:1607.04606, 2016.
+[3] Y.Wu,M.Schuster,Z.Chen,Q.V.Le,M.Norouzi,W.Macherey,M.Krikun,Y.Cao,
+Q.Gao, K. Macherey, J. Klingner, A. Shah, M. Johnson, X. Liu, . Kaiser, S. Gouws, Y. Kato, T. Kudo, H.Kazawa, K.Stevens, G.Kurian, N.Patil, W.Wang, C.Young, J.Smith, J.Riesa, A.Rudnick, O.Vinyals, G.Corrado, M.Hughes, and J.Dean. GooglesNeuralMachineTranslationSystem: Bridging the Gap between Human and Machine Translation. ArXiv e-prints, 2016. 
+[4] Andrei Alexandrescu and Katrin Kirchhoff. 2006. Factored neural language models. In Proc. NAACL.
+[5] Sentiment Classification using Machine Learning Techniques. (2016). International Journal of Science and Research (IJSR), 5(4), pp.819-821.
+[6] Vincent, P. and Bengio, Y. (2002). Journal search results - Cite This For Me. Machine Learning, 48(1/3), pp.165-187.
+[7] Mahoney, Matt. “About The Test Data”. Mattmahoney.net. N.p., 2011. Web. 20 Mar. 2017.
+[8] Tomas Mikolov. Statistical Language Models Based on Neural Networks. PhD thesis, PhD Thesis, Brno University of Technology, 2012.
+[9] Tomas Mikolov, Wen-tau Yih and Geoffrey Zweig. Linguistic Regularities in Continuous Space Word Representations. In Proceedings of NAACL HLT, 2013.
+[10] Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. Efﬁcient estimation of word representations in vector space. ICLR Workshop, 2013.
+[11] LevFinkelstein, EvgeniyGabrilovich, YossiMatias, EhudRivlin, ZachSolan, GadiWolfman, and Eytan Ruppin, ”Placing Search in Context: The Concept Revisited”, ACM Transactions on Information Systems, 20(1):116-131, Jan 2002.
+[12] Yoshua Bengio, R´ejean Ducharme, Pascal Vincent, and Christian Janvin. A neural probabilistic language model. The Journal of Machine Learning Research, 3:1137–1155, 2003.
+[13] Holger Schwenk. Continuous space language models. Computer Speech and Language, vol. 21, 2007.
+[14] Ronan Collobert and Jason Weston. A unified architecture for natural language processing: deep neural networks with multitask learning. In Proceedings of the 25th international conference on Machine
+learning, pages 160–167. ACM, 2008.
+[15] Jason Weston, Samy Bengio, and Nicolas Usunier. Wsabie: Scaling up to large vocabulary image annotation. In Proceedings of the Twenty-Second international joint conference on Artificial Intelligence-Volume
+Volume Three, pages 2764–2770. AAAI Press, 2011.
+[16] Richard Socher, Cliff C. Lin, Andrew Y. Ng, and Christopher D. Manning. Parsing natural scenes and natural language with recursive neural networks. In Proceedings of the 26th International Conference on
+Machine Learning (ICML), volume 2, 2011.
+[17] Xavier Glorot, Antoine Bordes, and Yoshua Bengio. Domain adaptation for large-scale sentiment classification:
+A deep learning approach. In ICML, 513–520, 2011.
+[18] Peter D. Turney and Patrick Pantel. From frequency to meaning: Vector space models of semantics. In
+Journal of Artificial Intelligence Research, 37:141-188, 2010.
+[19] Peter D. Turney. Distributional semantics beyond words: Supervised learning of analogy and paraphrase.
+In Transactions of the Association for Computational Linguistics (TACL), 353–366, 2013.
+[20] Tomas Mikolov, Wen-tau Yih and Geoffrey Zweig. Linguistic Regularities in Continuous Space Word
+Representations. In Proceedings of NAACL HLT, 2013.
+[21] R. Xu, J. Lu, C. Xiong, Z. Yang, and J. J. Corso. Improving
+word representations via global visual context. 2014. 
+[22] A. Lazaridou, N. T. Pham, and M. Baroni. Combining language and vision with a multimodal skip-gram model. In Proceedings of the 2015 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies, pages 153–163, Denver, Colorado, May–June 2015. Association for Computational Linguistics.
+[23] LevFinkelstein, EvgeniyGabrilovich, YossiMatias, EhudRivlin, ZachSolan, GadiWolfman, and Eytan Ruppin, “Placing Search in Context: The Concept Revisited”, ACM Transactions on Information Systems, 20(1):116-131, January 2002.
+[24] Nlp.stanford.edu. (2017). Stemming and lemmatization. [online] Available at: https://nlp.stanford.edu/IR-book/html/htmledition/stemming-and-lemmatization-1.html [Accessed 10 Aug. 2017].
+[25] Stanford Edu., (2017). Available at: https://web.stanford.edu/~jurafsky/slp3/10.pdf [Accessed 10 Aug. 2017].
+[26] Chris Nicholson, A. (2017). Word2vec: Neural Word Embeddings in Java - Deeplearning4j: Open-source, Distributed Deep Learning for the JVM. [online] Deeplearning4j.org. Available at: https://deeplearning4j.org/word2vec [Accessed 10 Aug. 2017].
+[27] David Guthrie, Ben Allison, Wei Liu, Louise Guthrie and Yorick Wilks, “A Closer Look at Skip-Gram Modelling”, [online] Citeseerx.ist.psu.edu. Available at: http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.62.4714
+[28] Scikit-learn.org. (2017). sklearn.manifold.TSNE — scikit-learn 0.19.0 documentation. [online] Available at: http://scikit-learn.org/stable/modules/generated/sklearn.manifold.TSNE.html [Accessed 12 Aug. 2017].
+[29] Explosion AI. (2017). Sense2vec with spaCy and Gensim. [online] Available at: https://explosion.ai/blog/sense2vec-with-spacy [Accessed 14 Aug. 2017].
+[30] Andrew Trask, Phile Michalak and John Liu, “sense2Vec – A Fast and Accurate Method for Word Sense Disambiguation in Neural Word Embeddings”, Digital Reasoning Systems Inc., Nashville, USA.
+
+ 
