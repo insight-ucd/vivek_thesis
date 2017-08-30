@@ -1,6 +1,6 @@
 
 
-# Neural Embeddings for Automatic Sentiment Analysis (Vivek Mahato)
+# Neural Embeddings for Automatic Sentiment Analysis
 
 ## Introduction
 Automatic sentiment analysis under information extraction is an important field and continues to receive interest from the academic community. The aim is to extract sentiments and opinion from user reviews and use the extracted features and sentiment to classify the reviews which can be used for generating personalized recommendations.
